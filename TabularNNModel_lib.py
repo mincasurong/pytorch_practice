@@ -30,17 +30,6 @@ class TabularNNModel:
         self.batch_size = batch_size
         self.epochs = epochs
         
-    def _build_model(self, input_dim, hidden_dims):
-        layers = []
-        prev_dim = input_dim
-        for h_dim in hidden_dims:
-            layers.append(nn.Linear(prev_dim, h_dim))
-            layers.append(nn.ReLU())
-            prev_dim = h_dim
-        layers.append(nn.Linear(prev_dim, 1))
-        layers.append(nn.Sigmoid())
-        return nn.Sequential(*layers)
-    
     def preprocess_data(self, df, target_column, drop_columns=None):
         if drop_columns is not None:
             df = df.drop(columns=drop_columns)
@@ -69,6 +58,17 @@ class TabularNNModel:
         self.test_data = (torch.tensor(X_test, dtype=torch.float32).to(self.device),
                           torch.tensor(y_test.values, dtype=torch.float32).view(-1, 1).to(self.device))
         
+    def _build_model(self, input_dim, hidden_dims):
+        layers = []
+        prev_dim = input_dim
+        for h_dim in hidden_dims:
+            layers.append(nn.Linear(prev_dim, h_dim))
+            layers.append(nn.ReLU())
+            prev_dim = h_dim
+        layers.append(nn.Linear(prev_dim, 1))
+        layers.append(nn.Sigmoid())
+        return nn.Sequential(*layers)
+    
     def train(self):
         for epoch in range(self.epochs):
             running_loss = 0.0
