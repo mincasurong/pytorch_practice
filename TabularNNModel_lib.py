@@ -6,11 +6,12 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 from torch.utils.data import DataLoader, TensorDataset
 
 
 class TabularNNModel:
-    def __init__(self, input_dim, hidden_dims=[64, 32], lr=0.001, batch_size=64, epochs=10):
+    def __init__(self, input_dim, hidden_dims=[128, 64, 32], lr=0.0001, batch_size=16, epochs=20):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self._build_model(input_dim, hidden_dims).to(self.device)
         self.criterion = nn.BCELoss() 
@@ -70,6 +71,9 @@ class TabularNNModel:
         return nn.Sequential(*layers)
     
     def train(self):
+        best_loss = float('inf')
+        patience, trials = 5, 0
+        
         for epoch in range(self.epochs):
             running_loss = 0.0
             for inputs, labels in self.train_loader:
@@ -82,7 +86,18 @@ class TabularNNModel:
                 self.optimizer.step()
                 
                 running_loss += loss.item()
+            avg_loss = running_loss / len(self.train_loader)
             print(f"Epoch {epoch + 1}, Loss: {running_loss / len(self.train_loader)}")
+            
+            # Early stopping
+            if avg_loss < best_loss:
+                best_loss = avg_loss
+                trials = 0
+            else:
+                trials += 1
+                if trials >= patience:
+                    print('Early stopping!')
+                    break
         print('Finished Training')
         
     def evaluate(self):
@@ -91,9 +106,22 @@ class TabularNNModel:
             inputs, labels = self.test_data
             outputs = self.model(inputs)
             predicted = (outputs > 0.5).float()
-            accuracy = (predicted == labels).sum().item() / labels.size(0)
-        print(f'Accuracy of the network on the test set: {accuracy * 100:.2f}%')
-        return accuracy
+            
+            # Convert to CPU tensors for sklearn
+            labels = labels.cpu().numpy()
+            predicted = predicted.cpu().numpy()
+            
+            # Report
+            accuracy = accuracy_score(labels, predicted)
+            print(f'Accuracy: {accuracy * 100:.2f}%')
+            
+            cm = confusion_matrix(labels, predicted)
+            print(f'Confusion Matrix:\n{cm}')
+                
+            report = classification_report(labels, predicted, target_names=['Not Survived', 'Survived'])
+            print(f'Classification Report:\n{report}')
+            
+        return accuracy, cm, report
         
 # Usage example with the Titanic dataset
 
