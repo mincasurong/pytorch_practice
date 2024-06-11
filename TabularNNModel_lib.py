@@ -1,3 +1,4 @@
+#%%
 
 import pandas as pd
 import torch
@@ -12,8 +13,20 @@ class TabularNNModel:
     def __init__(self, input_dim, hidden_dims=[64, 32], lr=0.001, batch_size=64, epochs=10):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self._build_model(input_dim, hidden_dims).to(self.device)
-        self.criterion = nn.BCELoss()
+        self.criterion = nn.BCELoss() 
+        '''
+            BCELoss()
+            BCEWithLogitsLoss() -- Combines Sigmoid + BCELoss
+            MSELoss() -- Mean Squared Error -> binary classification
+            CrossEntropyLoss() -- Softmax -> Multiclass classification
+        ''' 
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+        '''
+            Adam()
+            RMSprop -- adapt the learning rate for each parameter
+            Adagrad -- Adative learning rate -> Good for sparse data
+            Adadelta -- extension of Adagrad.  Reduce its aggressive, decreasing learning rate
+        '''
         self.batch_size = batch_size
         self.epochs = epochs
         
@@ -95,3 +108,4 @@ if __name__ == "__main__":
     model.train()
     model.evaluate()
     
+# %%
